@@ -44,7 +44,19 @@ export default class EventConcept {
     return { msg: "Event deleted successfully!" };
   }
 
-  async getEvent(_id: ObjectId) {
+  async getByAuthor(author: ObjectId) {
+    return await this.events.readMany({ author });
+  }
+
+  async getIdByName(name: string) {
+    const event = await this.events.readOne({ name });
+    if (event === null) {
+      throw new NotFoundError(`Event not found!`);
+    }
+    return event._id;
+  }
+
+  async getById(_id: ObjectId) {
     const event = await this.events.readOne({ _id });
     if (event === null) {
       throw new NotFoundError(`Event not found!`);
@@ -52,7 +64,14 @@ export default class EventConcept {
     return event;
   }
 
-  async getAllEvents() {
+  async idsToNames(ids: ObjectId[]) {
+    const events = await this.events.readMany({ _id: { $in: ids } });
+
+    const idToUser = new Map(events.map((event) => [event._id.toString(), event]));
+    return ids.map((id) => idToUser.get(id.toString())?.name ?? "DELETED_EVENT");
+  }
+
+  async getEvents() {
     return await this.events.readMany({}, { sort: { _id: -1 } });
   }
 
@@ -82,7 +101,7 @@ export default class EventConcept {
       await this.events.partialUpdateOne({ _id }, { choreographers });
       return { msg: "Event choreog successfully deleted!" };
     } else {
-      throw new Error('Choreographer not in choreographers list!');
+      return { msg: 'Choreographer not in choreographers list!' };
     }
   }
 
@@ -107,7 +126,7 @@ export default class EventConcept {
       await this.events.partialUpdateOne({ _id }, { genres });
       return { msg: "Event genre successfully deleted!" };
     } else {
-      throw new Error('Genre not in genres list!');
+      return { msg : 'Genre not in genres list!' };
     }
   }
 
@@ -132,7 +151,7 @@ export default class EventConcept {
       await this.events.partialUpdateOne({ _id }, { props });
       return { msg: "Event prop successfully deleted!" };
     } else {
-      throw new Error('Prop not in props list!');
+      return { msg: 'Prop not in props list!' };
     }
   }
 
@@ -157,7 +176,7 @@ export default class EventConcept {
       await this.events.partialUpdateOne({ _id }, { attendees });
       return { msg: "Event attendee successfully deleted!" };
     } else {
-      throw new Error('Attendee not in attendee list!');
+      return { msg: 'Attendee not in attendee list!' };
     }
   }
 

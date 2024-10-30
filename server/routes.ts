@@ -164,7 +164,8 @@ class Routes {
   @Router.post("/videos")
   async createVideo(session: SessionDoc, url: string, description: string) {
     const user = Sessioning.getUser(session);
-    return await Videos.createVideo(user, url, description);
+    const created = await Videos.createVideo(user, url, description);
+    return { msg: created.msg, video: await Responses.video(created.video) };
   }
 
   @Router.get("/videos")
@@ -177,7 +178,7 @@ class Routes {
     } else {
       videos = await Videos.getVideos();
     }
-    return videos;
+    return Responses.videos(videos);
   }
 
   @Router.delete("/videos/:id")
@@ -191,9 +192,10 @@ class Routes {
   //organizations routes
 
   @Router.post("/organizations")
-  async createOrg(session: SessionDoc, name: string, description: string, privacy: boolean) {
+  async createOrg(session: SessionDoc, name: string, description: string, privacy: string) {
     const user = Sessioning.getUser(session);
-    return await Organizations.createOrg(user, name, description, privacy);
+    const created = await Organizations.createOrg(user, name, description, privacy);
+    return { msg: created.msg, org: await Responses.org(created.organization) };
   }
 
   @Router.delete("/organizations/:id")
@@ -212,21 +214,24 @@ class Routes {
     return await Organizations.updateOrg(oid, name, description);
   }
 
-  @Router.get("/organizations/:id")
-  async getOrg(id: string) {
-    const oid = new ObjectId(id);
-    return await Organizations.getOrg(oid);
-  }
-
   @Router.get("/organizations")
-  async getAllOrgs() {
-    return await Organizations.getAllOrgs();
+  @Router.validate(z.object({ author: z.string().optional() }))
+  async getOrgs(author?: string) {
+    let orgs;
+    if (author) {
+      const id = (await Authing.getUserByUsername(author))._id;
+      orgs = await Organizations.getByAuthor(id);
+    } else {
+      orgs = await Organizations.getOrgs();
+    }
+    return Responses.orgs(orgs);
   }
 
   @Router.patch("/organizations/addmember/:id")
-  async addMember(session: SessionDoc, id: string, member: string) {
+  async addMember(session: SessionDoc, id: string, member_id: string) {
     const user = Sessioning.getUser(session);
     const oid = new ObjectId(id);
+    const member = (await Authing.getUserById(new ObjectId(member_id))).username;
     await Organizations.assertAuthorIsUser(oid, user);
     return await Organizations.addMember(oid, member);
   }
@@ -293,7 +298,8 @@ class Routes {
   @Router.post("/events")
   async createEvent(session: SessionDoc, name: string, time: string, location: string, price: number, description: string) {
     const user = Sessioning.getUser(session);
-    return await Events.createEvent(user, name, time, location, price, description);
+    const created = await Events.createEvent(user, name, time, location, price, description);
+    return { msg: created.msg, video: await Responses.event(created.event) };
   }
 
   @Router.delete("/events/:id")
@@ -304,15 +310,17 @@ class Routes {
     return await Events.deleteEvent(oid);
   }
 
-  @Router.get("/events/:id")
-  async getEvent(id: string) {
-    const eventOid = new ObjectId(id);
-    return await Events.getEvent(eventOid);
-  }
-
   @Router.get("/events")
-  async getAllEvents() {
-    return await Events.getAllEvents();
+  @Router.validate(z.object({ author: z.string().optional() }))
+  async getEvents(author?: string) {
+    let events;
+    if (author) {
+      const id = (await Authing.getUserByUsername(author))._id;
+      events = await Events.getByAuthor(id);
+    } else {
+      events = await Events.getEvents();
+    }
+    return Responses.events(events);
   }
 
   @Router.patch("/events/:id")
@@ -389,45 +397,46 @@ class Routes {
 
   //invite routes
 
-  @Router.post("/invite/:to")
-  async sendInvite(session: SessionDoc, to: string, event_id: string) {
+  @Router.post("/invite/:event/:to")
+  async sendInvite(session: SessionDoc, to: string, event: string) {
     const user = Sessioning.getUser(session);
     const toOid = (await Authing.getUserByUsername(to))._id;
-    const eventOid = new ObjectId(event_id);
+    const eventOid = (await Events.getIdByName(event));
     await Events.assertUserNotAttendee(eventOid, toOid);
     return await Inviting.sendInvite(eventOid, user, toOid);
   }
 
-  @Router.delete("/invite/:to")
-  async removeInvite(session: SessionDoc, to: string, event_id: string) {
+  @Router.delete("/invite/:event/:to")
+  async removeInvite(session: SessionDoc, to: string, event: string) {
     const user = Sessioning.getUser(session);
     const toOid = (await Authing.getUserByUsername(to))._id;
-    const eventOid = new ObjectId(event_id);
+    const eventOid = (await Events.getIdByName(event));
     return await Inviting.removeInvite(eventOid, user, toOid);
   }
 
-  @Router.put("/invite/accept/:from")
-  async acceptInvite(session: SessionDoc, from: string, event_id: string) {
+  @Router.put("/invite/accept/:event/:from")
+  async acceptInvite(session: SessionDoc, from: string, event: string) {
     const user = Sessioning.getUser(session);
     const fromOid = (await Authing.getUserByUsername(from))._id;
-    const eventOid = new ObjectId(event_id);
+    const eventOid = (await Events.getIdByName(event));
     const msg = await Inviting.acceptInvite(eventOid, fromOid, user);
     await Events.addAttendee(eventOid, user.toString());
     return msg;
   }
 
-  @Router.put("/invite/reject/:from")
-  async rejectInvite(session: SessionDoc, from: string, event_id: string) {
+  @Router.put("/invite/reject/:event/:from")
+  async rejectInvite(session: SessionDoc, from: string, event: string) {
     const user = Sessioning.getUser(session);
     const fromOid = (await Authing.getUserByUsername(from))._id;
-    const eventOid = new ObjectId(event_id);
+    const eventOid = (await Events.getIdByName(event));
     return await Inviting.rejectInvite(eventOid, fromOid, user);
   }
 
   @Router.get("/invite")
   async getInvites(session: SessionDoc) {
     const user = Sessioning.getUser(session);
-    return await Inviting.getInvites(user);
+    const invites = await Inviting.getInvites(user);
+    return Responses.invites(invites);
   }
 
 }

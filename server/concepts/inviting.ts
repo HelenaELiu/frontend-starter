@@ -59,16 +59,14 @@ export default class InvitingConcept {
     return invite;
   }
 
-  private async canSendInvite(event: ObjectId, u1: ObjectId, u2: ObjectId) {
-    // check if there is pending invite between these users
-    const invite = await this.invites.readOne({
-      event: { in: event },
-      from: { $in: [u1, u2] },
-      to: { $in: [u1, u2] },
-      status: "pending",
-    });
-    if (invite !== null) {
-      throw new Error("Invite already exists!");
+  private async canSendInvite(event: ObjectId, from: ObjectId, to: ObjectId) {
+    // check if there is pending invite
+    const allInvites = await this.invites.readMany({}, { sort: { _id: -1 } });
+
+    for (const invite of allInvites) {
+      if (invite.event.equals(event) && invite.from.equals(from) && invite.to.equals(to)) {
+        throw new Error("Invite already exists!");
+      }
     }
   }
 }

@@ -23,7 +23,7 @@ export default class VideoConcept {
 
   async createVideo(author: ObjectId, url: string, description: string) {
     const _id = await this.videos.createOne({author, url, description});
-    return { msg: "Video created successfully!", organization: await this.videos.readOne({ _id }) };
+    return { msg: "Video created successfully!", video: await this.videos.readOne({ _id }) };
   }
 
   async deleteVideo(_id: ObjectId) {

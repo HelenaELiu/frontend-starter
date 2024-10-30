@@ -20,8 +20,8 @@ const deleteVideo = async () => {
 
 <template>
   <p class="author">{{ props.video.author }}</p>
-  <p>{{ props.video.url }}</p>
-  <p>{{ props.video.description }}</p>
+  <p>{{ "URL: " + props.video.url }}</p>
+  <p>{{ "Caption: " + props.video.description }}</p>
   <div class="base">
     <menu v-if="props.video.author == currentUsername">
       <li><button class="button-error btn-small pure-button" @click="deleteVideo">Delete</button></li>

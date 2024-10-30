@@ -6,7 +6,7 @@ export interface OrganizationDoc extends BaseDoc {
   author: ObjectId;
   name: string;
   description: string;
-  privacy: boolean;
+  privacy: string;
   members: string[];
 }
 
@@ -23,7 +23,7 @@ export default class OrganizationConcept {
     this.organizations = new DocCollection<OrganizationDoc>(collectionName);
   }
 
-  async createOrg(author: ObjectId, name: string, description: string, privacy: boolean) {
+  async createOrg(author: ObjectId, name: string, description: string, privacy: string) {
     let members = [author.toString()];
     const _id = await this.organizations.createOne({author, name, description, privacy, members});
     return { msg: "Organization created successfully!", organization: await this.organizations.readOne({ _id }) };
@@ -34,11 +34,11 @@ export default class OrganizationConcept {
     return { msg: "Organization deleted successfully!" };
   }
 
-  async getOrg(_id: ObjectId) {
-    return await this.organizations.readOne({ _id });
+  async getByAuthor(author: ObjectId) {
+    return await this.organizations.readMany({ author });
   }
 
-  async getAllOrgs() {
+  async getOrgs() {
     return await this.organizations.readMany({}, { sort: { _id: -1 } });
   }
 
@@ -70,18 +70,18 @@ export default class OrganizationConcept {
       }
       return { msg: "Organization member successfully deleted!" };
     } else {
-      throw new Error('Member not in members list!');
+      return { msg: 'Member not in members list!' };
     }
   }
 
   async makePublic(_id: ObjectId) {
-    let privacy = false;
+    let privacy = "public";
     await this.organizations.partialUpdateOne({ _id }, { privacy });
     return { msg: "Organization privacy successfully updated!" };
   }
 
   async makePrivate(_id: ObjectId) {
-    let privacy = true;
+    let privacy = "private";
     await this.organizations.partialUpdateOne({ _id }, { privacy });
     return { msg: "Organization privacy successfully updated!" };
   }

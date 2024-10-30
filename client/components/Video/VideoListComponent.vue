@@ -5,7 +5,7 @@ import { useUserStore } from "@/stores/user";
 import { fetchy } from "@/utils/fetchy";
 import { storeToRefs } from "pinia";
 import { onBeforeMount, ref } from "vue";
-import SearchVideoForm from "./SearchVideoForm.vue";
+import SearchVideoForm from "@/components/Video/SearchVideoForm.vue";
 
 const { isLoggedIn } = storeToRefs(useUserStore());
 

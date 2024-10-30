@@ -6,6 +6,9 @@ import HomeView from "../views/HomeView.vue";
 import LoginView from "../views/LoginView.vue";
 import NotFoundView from "../views/NotFoundView.vue";
 import SettingView from "../views/SettingView.vue";
+import EventView from "../views/EventView.vue";
+import InviteView from "../views/InviteView.vue";
+import OrgView from "../views/OrgView.vue";
 
 const router = createRouter({
   history: createWebHistory(),
@@ -14,6 +17,21 @@ const router = createRouter({
       path: "/",
       name: "Home",
       component: HomeView,
+    },
+    {
+      path: "/",
+      name: "Events",
+      component: EventView,
+    },
+    {
+      path: "/",
+      name: "Invites",
+      component: InviteView,
+    },
+    {
+      path: "/",
+      name: "Organizations",
+      component: OrgView,
     },
     {
       path: "/setting",
